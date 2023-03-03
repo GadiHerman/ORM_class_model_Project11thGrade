@@ -9,33 +9,33 @@ using System.Threading.Tasks;
 
 namespace DBL
 {
-    public abstract class BaseDB : DB
+    public abstract class BaseDB<T> : DB
     {
         protected MySqlDataReader reader;
         protected abstract string GetTableName();
-        protected abstract object GetRowByPK(object pk);
-        protected abstract Task<object> GetRowByPKAsync(object pk);
-        protected abstract object CreateModel(object[] row);
-        protected abstract Task<object> CreateModelAsync(object[] row);
-        protected abstract object CreateListModel(List<object[]> rows);
-        protected abstract Task<object> CreateListModelAsync(List<object[]> rows);
+        protected abstract T GetRowByPK(object pk);
+        protected abstract Task<T> GetRowByPKAsync(object pk);
+        protected abstract T CreateModel(object[] row);
+        protected abstract Task<T> CreateModelAsync(object[] row);
+        protected abstract List<T> CreateListModel(List<object[]> rows);
+        protected abstract Task<List<T>> CreateListModelAsync(List<object[]> rows);
 
-        public object SelectAll()
+        public List<T> SelectAll()
         {
             List<object[]> list = (List<object[]>)StingListSelectAll("", new Dictionary<string, string>());
             return CreateListModel(list);
         }
-        public object SelectAll(Dictionary<string, string> parameters)
+        public List<T> SelectAll(Dictionary<string, string> parameters)
         {
             List<object[]> list = (List<object[]>)StingListSelectAll("", parameters);
             return CreateListModel(list);
         }
-        public object SelectAll(string query)
+        public List<T> SelectAll(string query)
         {
             List<object[]> list = (List<object[]>)StingListSelectAll(query, new Dictionary<string, string>());
             return CreateListModel(list);
         }
-        public object SelectAll(string query, Dictionary<string, string> parameters)
+        public List<T> SelectAll(string query, Dictionary<string, string> parameters)
         {
             List<object[]> list = (List<object[]>)StingListSelectAll(query, parameters);
             return CreateListModel(list);
@@ -93,7 +93,7 @@ namespace DBL
             return list;
         }
 
-        // exeNONquery
+        //for ExecuteNonQuery
         protected int exeNONquery(string query)
         {
             if (String.IsNullOrEmpty(query))

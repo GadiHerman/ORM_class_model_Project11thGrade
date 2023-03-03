@@ -3,6 +3,7 @@
 @using DBL
 @inject IJSRuntime js
 
+<div class="m-2">
 <span class="h1">My Customers</span>
 
 @if (list == null)
@@ -33,7 +34,8 @@ else
         </tbody>
     </table>
 }
-
+<a href="/registration" class="btn btn-success">Add new Customer</a>
+</div>
 @code {
     List<Customer> list;
     protected override async Task OnInitializedAsync()

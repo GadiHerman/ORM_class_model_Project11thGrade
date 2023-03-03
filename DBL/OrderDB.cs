@@ -7,13 +7,13 @@ using System.Threading.Tasks;
 
 namespace DBL
 {
-    public class OrderDB : BaseDB
+    public class OrderDB : BaseDB<Order>
     {
         protected override string GetTableName()
         {
             return "Orders";
         }
-        protected override object CreateModel(object[] row)
+        protected override Order CreateModel(object[] row)
         {
             Order o = new Order();
             o.Id = int.Parse(row[0].ToString());
@@ -22,7 +22,7 @@ namespace DBL
             o.customer = new CustomerDB().SelectByPk(custID);
             return o;
         }
-        protected override async Task<object> CreateModelAsync(object[] row)
+        protected override async Task<Order> CreateModelAsync(object[] row)
         {
             Order o = new Order();
             o.Id = int.Parse(row[0].ToString());
@@ -34,7 +34,7 @@ namespace DBL
             o.customer = customer;
             return o;
         }
-        protected override object CreateListModel(List<object[]> rows)
+        protected override List<Order> CreateListModel(List<object[]> rows)
         {
             List<Order> orderList = new List<Order>();
             foreach (object[] item in rows)
@@ -45,7 +45,7 @@ namespace DBL
             }
             return orderList;
         }
-        protected override async Task<object> CreateListModelAsync(List<object[]> rows)
+        protected override async Task<List<Order>> CreateListModelAsync(List<object[]> rows)
         {
             List<Order> orderList = new List<Order>();
             foreach (object[] item in rows)
@@ -56,7 +56,7 @@ namespace DBL
             }
             return orderList;
         }
-        protected override async Task<object> GetRowByPKAsync(object pk)
+        protected override async Task<Order> GetRowByPKAsync(object pk)
         {
             string sql = @"SELECT orders.* FROM orders WHERE (OrderID = @id)";
             cmd.Parameters.AddWithValue("@id", int.Parse(pk.ToString()));
@@ -67,7 +67,7 @@ namespace DBL
                 return null;
         }
 
-        protected override object GetRowByPK(object pk)
+        protected override Order GetRowByPK(object pk)
         {
             string sql = @"SELECT orders.* FROM orders WHERE (OrderID = @id)";
             cmd.Parameters.AddWithValue("@id", int.Parse(pk.ToString()));

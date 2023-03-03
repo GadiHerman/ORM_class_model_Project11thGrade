@@ -7,13 +7,13 @@ using Models;
 
 namespace DBL
 {
-    public class CustomerDB : BaseDB
+    public class CustomerDB : BaseDB<Customer>
     {
         protected override string GetTableName()
         {
             return "Customers";
         }
-        protected override object CreateModel(object[] row)
+        protected override Customer CreateModel(object[] row)
         {
             Customer c = new Customer();
             c.Id = int.Parse(row[0].ToString());
@@ -22,7 +22,7 @@ namespace DBL
             c.IsAdmin = bool.Parse(row[4].ToString());
             return c;
         }
-        protected override async Task<object> CreateModelAsync(object[] row)
+        protected override async Task<Customer> CreateModelAsync(object[] row)
         {
             Customer c = new Customer();
             c.Id = int.Parse(row[0].ToString());
@@ -31,7 +31,7 @@ namespace DBL
             c.IsAdmin = bool.Parse(row[4].ToString());
             return c;
         }
-        protected override object CreateListModel(List<object[]> rows)
+        protected override List<Customer> CreateListModel(List<object[]> rows)
         {
             List<Customer> custList = new List<Customer>();
             foreach (object[] item in rows)
@@ -42,7 +42,7 @@ namespace DBL
             }
             return custList;
         }
-        protected override async Task<object> CreateListModelAsync(List<object[]> rows)
+        protected override async Task<List<Customer>> CreateListModelAsync(List<object[]> rows)
         {
             List<Customer> custList = new List<Customer>();
             foreach (object[] item in rows)
@@ -54,7 +54,7 @@ namespace DBL
             return custList;
         }
 
-        protected override async Task<object> GetRowByPKAsync(object pk)
+        protected override async Task<Customer> GetRowByPKAsync(object pk)
         {
             string sql = @"SELECT customers.* FROM customers WHERE (CustomerID = @id)";
             cmd.Parameters.AddWithValue("@id", int.Parse(pk.ToString()));
@@ -65,7 +65,7 @@ namespace DBL
                 return null;
         }
 
-        protected override object GetRowByPK(object pk)
+        protected override Customer GetRowByPK(object pk)
         {
             string sql = @"SELECT customers.* FROM customers WHERE (CustomerID = @id)";
             cmd.Parameters.AddWithValue("@id", int.Parse(pk.ToString()));
