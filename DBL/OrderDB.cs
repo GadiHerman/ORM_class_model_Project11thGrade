@@ -80,16 +80,14 @@ namespace DBL
 
         public async Task<List<Order>> GetAllAsync()
         {
-            return ((List<Order>)await SelectAllAsync());
-        }
-        
-        
+            return (List<Order>)await SelectAllAsync();
+        }       
         
         public async Task<List<Order>> GetAllOrdersByCustomerIDAsync(int customerID)
         {
             Dictionary<string, string> p = new Dictionary<string, string>();
             p.Add("CustomerID", customerID.ToString());
-            return ((List<Order>)await SelectAllAsync(p));
+            return (List<Order>)await SelectAllAsync(p);
         }
         public async Task<Order> GetOrderByPkAsync(int OrderID)
         {

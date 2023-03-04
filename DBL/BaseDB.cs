@@ -1,17 +1,18 @@
-﻿using MySql.Data.MySqlClient;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Data.Common;
 using System.Linq;
+using System.Reflection;
+using System.Reflection.PortableExecutable;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace DBL
 {
     public abstract class BaseDB<T> : DB
-    {
-        protected MySqlDataReader reader;
+    {    
         protected abstract string GetTableName();
         protected abstract T GetRowByPK(object pk);
         protected abstract Task<T> GetRowByPKAsync(object pk);
@@ -81,7 +82,7 @@ namespace DBL
             catch (Exception e)
             {
                 System.Diagnostics.Debug.WriteLine(e.Message + "\nsql:" + cmd.CommandText);
-                ((List<string[]>)list).Clear();
+                //((List<string[]>)list).Clear();
             }
             finally
             {
@@ -306,7 +307,6 @@ namespace DBL
         }
         protected async Task<object> StingListSelectAllAsync(string query, Dictionary<string, string> parameters)
         {
-            object list = new List<object[]>();
             string where = "WHERE ";
             if (parameters != null && parameters.Count > 0)
             {
@@ -323,39 +323,8 @@ namespace DBL
                 where = "";
             string sqlCommand = $"{query} {where}";
             if (String.IsNullOrEmpty(query))
-                sqlCommand = $"SELECT * FROM {GetTableName()} {where}";
-            base.cmd.CommandText = sqlCommand;
-            if (DB.conn.State != System.Data.ConnectionState.Open)
-                DB.conn.Open();
-            if (base.cmd.Connection.State != System.Data.ConnectionState.Open)
-                base.cmd.Connection = DB.conn;
-
-            try
-            {
-                this.reader = (MySqlDataReader)await base.cmd.ExecuteReaderAsync();
-                var readOnlyData = await reader.GetColumnSchemaAsync();
-                int size = readOnlyData.Count;
-                object[] row;
-                while (this.reader.Read())
-                {
-                    row = new object[size];
-                    this.reader.GetValues(row);
-                    ((List<object[]>)list).Add(row);
-                }
-            }
-            catch (Exception e)
-            {
-                System.Diagnostics.Debug.WriteLine(e.Message + "\nsql:" + cmd.CommandText);
-                ((List<string[]>)list).Clear();
-            }
-            finally
-            {
-                base.cmd.Parameters.Clear();
-                if (reader != null) reader.Close();
-                if (DB.conn.State == System.Data.ConnectionState.Open)
-                    DB.conn.Close();
-            }
-            return list;
+                sqlCommand = $"SELECT * FROM {GetTableName()} {where}"; 
+            return await base.getDataFromDBAsync(sqlCommand);
         }
 
         // exeNONquery
