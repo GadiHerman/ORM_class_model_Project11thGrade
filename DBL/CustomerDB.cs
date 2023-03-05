@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Google.Protobuf.WellKnownTypes;
 using Models;
 
 namespace DBL
@@ -57,7 +59,8 @@ namespace DBL
         protected override async Task<Customer> GetRowByPKAsync(object pk)
         {
             string sql = @"SELECT customers.* FROM customers WHERE (CustomerID = @id)";
-            cmd.Parameters.AddWithValue("@id", int.Parse(pk.ToString()));
+            //cmd.Parameters.AddWithValue("@id", int.Parse(pk.ToString()));
+            AddParameterToCommand("@id", int.Parse(pk.ToString()));
             List<Customer> list = (List<Customer>)await SelectAllAsync(sql);
             if (list.Count == 1)
                 return list[0];
@@ -68,7 +71,8 @@ namespace DBL
         protected override Customer GetRowByPK(object pk)
         {
             string sql = @"SELECT customers.* FROM customers WHERE (CustomerID = @id)";
-            cmd.Parameters.AddWithValue("@id", int.Parse(pk.ToString()));
+            //cmd.Parameters.AddWithValue("@id", int.Parse(pk.ToString()));
+            AddParameterToCommand("@id", int.Parse(pk.ToString()));
             List<Customer> list = (List<Customer>)SelectAll(sql);
             if (list.Count == 1)
                 return list[0];
@@ -189,35 +193,27 @@ namespace DBL
             return base.Update(fillValues, filterValues);
         }
 
-
-
-
-
-
-
-
-
         // specific queries
         public async Task<string> GetPasswordAsync(int id)
         {
             string sql = @"SELECT customers.CustomerPassword FROM customers WHERE (CustomerID = @id)";
-            cmd.Parameters.AddWithValue("@id", id);
-            string oldPassword = (string)await exeScalarAsync(sql);
+            AddParameterToCommand("@id", id);
+            string oldPassword = (string)await ExecScalarAsync(sql);
             return oldPassword;
         }
 
         public string GetPassword(int id)
         {
             string sql = @"SELECT customers.CustomerPassword FROM customers WHERE (CustomerID = @id)";
-            cmd.Parameters.AddWithValue("@id", id);
-            string oldPassword = (string)exeScalar(sql);
+            AddParameterToCommand("@id", id);
+            string oldPassword = (string)ExecScalar(sql);
             return oldPassword;
         }
 
         public async Task<Customer> SelectByPkAsync(int id)
         {
             string sql = @"SELECT customers.* FROM customers WHERE (CustomerID = @id)";
-            cmd.Parameters.AddWithValue("@id", id);
+            AddParameterToCommand("@id", id);
             List<Customer> list = (List<Customer>)await SelectAllAsync(sql);
             if (list.Count == 1)
                 return list[0];
@@ -228,7 +224,11 @@ namespace DBL
         public Customer SelectByPk(int id)
         {
             string sql = @"SELECT customers.* FROM customers WHERE (CustomerID = @id)";
-            cmd.Parameters.AddWithValue("@id", id);
+            DbParameter p = cmd.CreateParameter();
+            p.ParameterName = "@id";
+            p.Value = id;
+            cmd.Parameters.Add(p);
+            //AddParameterToCommand("@id", id);
             List<Customer> list = (List<Customer>)SelectAll(sql);
             if (list.Count == 1)
                 return list[0];

@@ -1,18 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Data.Common;
-using System.Linq;
-using System.Reflection;
-using System.Reflection.PortableExecutable;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Data.Common;
 
 namespace DBL
 {
     public abstract class BaseDB<T> : DB
-    {    
+    {
+        private const string WHERE_KW = "WHERE ";
+        private const string AND = "AND";
+
         protected abstract string GetTableName();
         protected abstract T GetRowByPK(object pk);
         protected abstract Task<T> GetRowByPKAsync(object pk);
@@ -23,91 +17,69 @@ namespace DBL
 
         public List<T> SelectAll()
         {
-            List<object[]> list = (List<object[]>)StingListSelectAll("", new Dictionary<string, string>());
-            return CreateListModel(list);
+            return SelectAll("", new Dictionary<string, string>());
         }
         public List<T> SelectAll(Dictionary<string, string> parameters)
         {
-            List<object[]> list = (List<object[]>)StingListSelectAll("", parameters);
-            return CreateListModel(list);
+            return SelectAll("", parameters);
         }
         public List<T> SelectAll(string query)
         {
-            List<object[]> list = (List<object[]>)StingListSelectAll(query, new Dictionary<string, string>());
-            return CreateListModel(list);
+            return SelectAll(query, new Dictionary<string, string>());
         }
         public List<T> SelectAll(string query, Dictionary<string, string> parameters)
         {
-            List<object[]> list = (List<object[]>)StingListSelectAll(query, parameters);
+            List<object[]> list = StingListSelectAll(query, parameters);
             return CreateListModel(list);
         }
-        protected object StingListSelectAll(string query, Dictionary<string, string> parameters)
+        protected List<object[]> StingListSelectAll(string query, Dictionary<string, string> parameters)
         {
-            object list = new List<object[]>();
-            string where = "WHERE ";
-            if (parameters != null && parameters.Count > 0)
-            {
-                int i = 0;
-                foreach (KeyValuePair<string, string> param in parameters)
-                {
-                    where += $"{param.Key} = {param.Value}";
-                    i++;
-                    if (i < parameters.Count)
-                        where += " AND ";
-                }
-            }
-            else
-                where = "";
+            List<object[]> list = new List<object[]>();
+
+            string where = ParamsToWhereQuery(parameters);
+
             string sqlCommand = $"{query} {where}";
             if (String.IsNullOrEmpty(query))
                 sqlCommand = $"SELECT * FROM {GetTableName()} {where}";
-            base.cmd.CommandText = sqlCommand;
-            if (DB.conn.State != System.Data.ConnectionState.Open)
-                DB.conn.Open();
-            if (base.cmd.Connection.State != System.Data.ConnectionState.Open)
-                base.cmd.Connection = DB.conn;
+
+            PreQuery(sqlCommand);
 
             try
             {
-                this.reader = base.cmd.ExecuteReader();
-                int size = reader.GetColumnSchema().ToArray().Length;
+                reader = cmd.ExecuteReader();
+                int size = reader.GetColumnSchema().Count;
                 object[] row;
-                while (this.reader.Read())
+                while (reader.Read())
                 {
                     row = new object[size];
-                    this.reader.GetValues(row);
-                    ((List<object[]>)list).Add(row);
+                    reader.GetValues(row);
+                    list.Add(row);
                 }
             }
             catch (Exception e)
             {
                 System.Diagnostics.Debug.WriteLine(e.Message + "\nsql:" + cmd.CommandText);
-                //((List<string[]>)list).Clear();
+                list.Clear();
             }
             finally
             {
-                base.cmd.Parameters.Clear();
-                if (reader != null) reader.Close();
-                if (DB.conn.State == System.Data.ConnectionState.Open)
-                    DB.conn.Close();
+                PostQuery();
             }
             return list;
         }
 
         //for ExecuteNonQuery
-        protected int exeNONquery(string query)
+        protected int ExecNonQuery(string query)
         {
             if (String.IsNullOrEmpty(query))
                 return 0;
-            base.cmd.CommandText = query;
-            if (DB.conn.State != System.Data.ConnectionState.Open)
-                DB.conn.Open();
-            if (base.cmd.Connection.State != System.Data.ConnectionState.Open)
-                base.cmd.Connection = DB.conn;
+
+            PreQuery(query);
+
             int rowsEffected = 0;
             try
             {
-                rowsEffected = base.cmd.ExecuteNonQuery();
+                rowsEffected = cmd.ExecuteNonQuery();
             }
             catch (Exception e)
             {
@@ -115,27 +87,22 @@ namespace DBL
             }
             finally
             {
-                base.cmd.Parameters.Clear();
-                if (DB.conn.State == System.Data.ConnectionState.Open)
-                    DB.conn.Close();
+                PostQuery();
             }
             return rowsEffected;
         }
 
         // exeScalar
-        public object exeScalar(string query)
+        public object ExecScalar(string query)
         {
             if (String.IsNullOrEmpty(query))
                 return null;
-            base.cmd.CommandText = query;
-            if (DB.conn.State != System.Data.ConnectionState.Open)
-                DB.conn.Open();
-            if (base.cmd.Connection.State != System.Data.ConnectionState.Open)
-                base.cmd.Connection = DB.conn;
+
+            PreQuery(query);
             object obj = null;
             try
             {
-                obj = base.cmd.ExecuteScalar();
+                obj = cmd.ExecuteScalar();
             }
             catch (Exception e)
             {
@@ -143,76 +110,61 @@ namespace DBL
             }
             finally
             {
-                base.cmd.Parameters.Clear();
-                if (DB.conn.State == System.Data.ConnectionState.Open)
-                    DB.conn.Close();
+                PostQuery();
             }
             return obj;
         }
 
         // Dictionary<string, string> FildValue - ערכים של שדות
         // return -  מספר שדות שעודכנו
-        protected int Insert(Dictionary<string, string> FildValue)
+        protected int Insert(Dictionary<string, string> keyAndValue)
         {
-            string InKey = $"(";
-            string InValue = "VALUES (";
-            if (FildValue != null && FildValue.Count > 0)
-            {
-                int i = 0;
-                foreach (KeyValuePair<string, string> param in FildValue)
-                {
-                    InKey += $"{param.Key}";
-                    InValue += $"'{param.Value}'";
-                    i++;
-                    if (i < FildValue.Count)
-                    {
-                        InKey += ",";
-                        InValue += ",";
-                    }
-                }
-                InKey += ")";
-                InValue += ")";
-            }
-            else
+            if (keyAndValue == null || keyAndValue.Count == 0)
                 return 0;
+
+            string InKey = $"(" + string.Join(",", keyAndValue.Keys) + ")";
+            //add param values
+            string InValue = "VALUES(";
+            for (int i = 0; i < keyAndValue.Values.Count; i++)
+            {
+                string pn = "@" + i;
+                InValue += pn + ',';
+                AddParameterToCommand(pn, keyAndValue.Values.ElementAt(i));
+            }
+            InValue = InValue.Remove(InValue.Length - 1);//remove last ,
+            InValue += ")";
+
             string sqlCommand = $"INSERT INTO {GetTableName()}  {InKey} {InValue}";
-            return exeNONquery(sqlCommand);
+            return ExecNonQuery(sqlCommand);
         }
 
-        protected object InsertGetObj(Dictionary<string, string> FildValue)
+        protected object InsertGetObj(Dictionary<string, string> keyAndValue)
         {
-            string InKey = $"(";
-            string InValue = "VALUES (";
-            if (FildValue != null && FildValue.Count > 0)
+            if (keyAndValue != null && keyAndValue.Count > 0)
             {
-                int i = 0;
-                foreach (KeyValuePair<string, string> param in FildValue)
+                string InKey = $"(" + string.Join(",", keyAndValue.Keys) + ")";
+                string InValue = "VALUES(";
+                for (int i = 0; i < keyAndValue.Values.Count; i++)
                 {
-                    InKey += $"{param.Key}";
-                    InValue += $"{param.Value}";
-                    i++;
-                    if (i < FildValue.Count)
-                    {
-                        InKey += ",";
-                        InValue += ",";
-                    }
+                    string pn = "@" + i;
+                    InValue += pn + ',';
+                    AddParameterToCommand(pn, keyAndValue.Values.ElementAt(i));
                 }
-                InKey += ")";
+                InValue = InValue.Remove(InValue.Length - 1);//remove last ,
                 InValue += ")";
+
+                string sqlCommand = $"INSERT INTO {GetTableName()}  {InKey} {InValue};" +
+                                    $"SELECT LAST_INSERT_ID();";
+                object res = ExecScalar(sqlCommand);
+                if (res != null)
+                {
+                    //TODO: Why thses casting?
+                    ulong qkwl = (ulong)res;
+                    int Id = (int)qkwl;
+                    return GetRowByPK(Id);
+                }
             }
-            else
-                return null;
-            string sqlCommand = $"INSERT INTO {GetTableName()}  {InKey} {InValue};" +
-                                $"SELECT LAST_INSERT_ID();";
-            object res = exeScalar(sqlCommand);
-            if (res != null)
-            {
-                ulong qkwl = (ulong)res;
-                int Id = (int)qkwl;
-                return GetRowByPK(Id);
-            }
-            else
-                return null;
+            return null;
         }
 
 
@@ -220,42 +172,16 @@ namespace DBL
         // Dictionary<string, string> parameters - תנאים לעדכון
         // return -  מספר שדות שעודכנו
 
-        protected int Update(Dictionary<string, string> FildValue, Dictionary<string, string> parameters)
+        protected int Update(Dictionary<string, string> keyAndValue, Dictionary<string, string> parameters)
         {
-            string InKeyValue = "";
-            string where = "WHERE ";
-
-            if (parameters != null && parameters.Count > 0)
-            {
-                int i = 0;
-                foreach (KeyValuePair<string, string> param in parameters)
-                {
-                    where += $"{param.Key} = {param.Value}";
-                    i++;
-                    if (i < parameters.Count)
-                        where += " AND ";
-                }
-            }
-            else
-                where = "";
-
-            if (FildValue != null && FildValue.Count > 0)
-            {
-                int i = 0;
-                foreach (KeyValuePair<string, string> param in FildValue)
-                {
-                    InKeyValue += $"{param.Key} = '{param.Value}'";
-                    i++;
-                    if (i < FildValue.Count)
-                    {
-                        InKeyValue += ",";
-                    }
-                }
-            }
-            else
+            if (keyAndValue == null || keyAndValue.Count == 0)
                 return 0;
+
+            string InKeyValue = PrepareKeysEqValuesInQuery(keyAndValue);
+            string where = ParamsToWhereQuery(parameters);
+
             string sqlCommand = $"UPDATE {GetTableName()} SET {InKeyValue}  {where}";
-            return exeNONquery(sqlCommand);
+            return ExecNonQuery(sqlCommand);
         }
 
         // Dictionary<string, string> parameters - תנאים לעדכון
@@ -263,84 +189,78 @@ namespace DBL
 
         protected int Delete(Dictionary<string, string> parameters)
         {
-            string where = "WHERE ";
-
-            if (parameters != null && parameters.Count > 0)
-            {
-                int i = 0;
-                foreach (KeyValuePair<string, string> param in parameters)
-                {
-                    where += $"{param.Key} = {param.Value}";
-                    i++;
-                    if (i < parameters.Count)
-                        where += " AND ";
-                }
-            }
-            else
-                where = "";
+            string where = ParamsToWhereQuery(parameters);
 
             string sqlCommand = $"DELETE FROM {GetTableName()} {where}";
-            return exeNONquery(sqlCommand);
+            return ExecNonQuery(sqlCommand);
         }
 
 
-        public async Task<object> SelectAllAsync()
+        public async Task<List<T>> SelectAllAsync()
         {
-            List<object[]> list = (List<object[]>)await StingListSelectAllAsync("", new Dictionary<string, string>());
+            return await SelectAllAsync("", new Dictionary<string, string>());
+        }
+
+        public async Task<List<T>> SelectAllAsync(Dictionary<string, string> parameters)
+        {
+            return await SelectAllAsync("", parameters);
+        }
+        public async Task<List<T>> SelectAllAsync(string query)
+        {
+            return await SelectAllAsync(query, new Dictionary<string, string>());
+        }
+        public async Task<List<T>> SelectAllAsync(string query, Dictionary<string, string> parameters)
+        {
+            List<object[]> list = await StingListSelectAllAsync(query, parameters);
             return CreateListModel(list);
         }
 
-        public async Task<object> SelectAllAsync(Dictionary<string, string> parameters)
+        protected async Task<List<object[]>> StingListSelectAllAsync(string query, Dictionary<string, string> parameters)
         {
-            List<object[]> list = (List<object[]>)await StingListSelectAllAsync("", parameters);
-            return CreateListModel(list);
-        }
-        public async Task<object> SelectAllAsync(string query)
-        {
-            List<object[]> list = (List<object[]>)await StingListSelectAllAsync(query, new Dictionary<string, string>());
-            return CreateListModel(list);
-        }
-        public async Task<object> SelectAllAsync(string query, Dictionary<string, string> parameters)
-        {
-            List<object[]> list = (List<object[]>)await StingListSelectAllAsync(query, parameters);
-            return CreateListModel(list);
-        }
-        protected async Task<object> StingListSelectAllAsync(string query, Dictionary<string, string> parameters)
-        {
-            string where = "WHERE ";
-            if (parameters != null && parameters.Count > 0)
-            {
-                int i = 0;
-                foreach (KeyValuePair<string, string> param in parameters)
-                {
-                    where += $"{param.Key} = {param.Value}";
-                    i++;
-                    if (i < parameters.Count)
-                        where += " AND ";
-                }
-            }
-            else
-                where = "";
+            List<object[]> list = new List<object[]>();
+            string where = ParamsToWhereQuery(parameters);
+
             string sqlCommand = $"{query} {where}";
             if (String.IsNullOrEmpty(query))
-                sqlCommand = $"SELECT * FROM {GetTableName()} {where}"; 
-            return await base.getDataFromDBAsync(sqlCommand);
+                sqlCommand = $"SELECT * FROM {GetTableName()} {where}";
+
+            PreQuery(sqlCommand);
+
+            try
+            {
+                reader = await cmd.ExecuteReaderAsync();
+                var readOnlyData = await reader.GetColumnSchemaAsync();
+                int size = readOnlyData.Count;
+                object[] row;
+                while (reader.Read())
+                {
+                    row = new object[size];
+                    reader.GetValues(row);
+                    list.Add(row);
+                }
+            }
+            catch (Exception e)
+            {
+                System.Diagnostics.Debug.WriteLine(e.Message + "\nsql:" + cmd.CommandText);
+                list.Clear();
+            }
+            finally
+            {
+                PostQuery();
+            }
+            return list;
         }
 
         // exeNONquery
-        protected async Task<int> exeNONqueryAsync(string query)
+        protected async Task<int> ExecNonQueryAsync(string query)
         {
             if (String.IsNullOrEmpty(query))
                 return 0;
-            base.cmd.CommandText = query;
-            if (DB.conn.State != System.Data.ConnectionState.Open)
-                DB.conn.Open();
-            if (base.cmd.Connection.State != System.Data.ConnectionState.Open)
-                base.cmd.Connection = DB.conn;
+            PreQuery(query);
             int rowsEffected = 0;
             try
             {
-                rowsEffected = await base.cmd.ExecuteNonQueryAsync();
+                rowsEffected = await cmd.ExecuteNonQueryAsync();
             }
             catch (Exception e)
             {
@@ -348,27 +268,21 @@ namespace DBL
             }
             finally
             {
-                base.cmd.Parameters.Clear();
-                if (DB.conn.State == System.Data.ConnectionState.Open)
-                    DB.conn.Close();
+                PostQuery();
             }
             return rowsEffected;
         }
 
         // exeScalar
-        public async Task<object> exeScalarAsync(string query)
+        public async Task<object> ExecScalarAsync(string query)
         {
             if (String.IsNullOrEmpty(query))
                 return null;
-            base.cmd.CommandText = query;
-            if (DB.conn.State != System.Data.ConnectionState.Open)
-                DB.conn.Open();
-            if (base.cmd.Connection.State != System.Data.ConnectionState.Open)
-                base.cmd.Connection = DB.conn;
+            PreQuery(query);
             object obj = null;
             try
             {
-                obj = await base.cmd.ExecuteScalarAsync();
+                obj = await cmd.ExecuteScalarAsync();
             }
             catch (Exception e)
             {
@@ -376,70 +290,57 @@ namespace DBL
             }
             finally
             {
-                base.cmd.Parameters.Clear();
-                if (DB.conn.State == System.Data.ConnectionState.Open)
-                    DB.conn.Close();
+                PostQuery();
             }
             return obj;
         }
 
+
         // Dictionary<string, string> FildValue - ערכים של שדות
         // return -  מספר שדות שעודכנו
-        protected async Task<int> InsertAsync(Dictionary<string, string> FildValue)
+        protected async Task<int> InsertAsync(Dictionary<string, string> keyAndValue)
         {
-            string InKey = $"(";
-            string InValue = "VALUES (";
-            if (FildValue != null && FildValue.Count > 0)
-            {
-                int i = 0;
-                foreach (KeyValuePair<string, string> param in FildValue)
-                {
-                    InKey += $"{param.Key}";
-                    InValue += $"'{param.Value}'";
-                    i++;
-                    if (i < FildValue.Count)
-                    {
-                        InKey += ",";
-                        InValue += ",";
-                    }
-                }
-                InKey += ")";
-                InValue += ")";
-            }
-            else
+            if (keyAndValue == null || keyAndValue.Count == 0)
                 return 0;
+
+            string InKey = $"(" + string.Join(",", keyAndValue.Keys) + ")";
+            //add param values
+            string InValue = "VALUES(";
+            for (int i = 0; i < keyAndValue.Values.Count; i++)
+            {
+                string pn = "@" + i;
+                InValue += pn + ',';
+                AddParameterToCommand(pn, keyAndValue.Values.ElementAt(i));
+            }
+            InValue = InValue.Remove(InValue.Length - 1);//remove last ,
+            InValue += ")";
+
             string sqlCommand = $"INSERT INTO {GetTableName()}  {InKey} {InValue}";
-            return await exeNONqueryAsync(sqlCommand);
+            return await ExecNonQueryAsync(sqlCommand);
         }
 
-        protected object InsertGetObjAsync(Dictionary<string, string> FildValue)
+        protected object InsertGetObjAsync(Dictionary<string, string> keyAndValue)
         {
-            string InKey = $"(";
-            string InValue = "VALUES (";
-            if (FildValue != null && FildValue.Count > 0)
-            {
-                int i = 0;
-                foreach (KeyValuePair<string, string> param in FildValue)
-                {
-                    InKey += $"{param.Key}";
-                    InValue += $"{param.Value}";
-                    i++;
-                    if (i < FildValue.Count)
-                    {
-                        InKey += ",";
-                        InValue += ",";
-                    }
-                }
-                InKey += ")";
-                InValue += ")";
-            }
-            else
+            if (keyAndValue == null || keyAndValue.Count == 0)
                 return null;
+
+            string InKey = "(" + string.Join(",", keyAndValue.Keys) + ")";
+            string InValue = "VALUES(";
+            for (int i = 0; i < keyAndValue.Values.Count; i++)
+            {
+                string pn = "@" + i;
+                InValue += pn + ',';
+                AddParameterToCommand(pn, keyAndValue.Values.ElementAt(i));
+            }
+            InValue = InValue.Remove(InValue.Length - 1);//remove last ,
+            InValue += ")";
+
             string sqlCommand = $"INSERT INTO {GetTableName()}  {InKey} {InValue};" +
                                 $"SELECT LAST_INSERT_ID();";
-            object res = exeScalarAsync(sqlCommand);
+            object res = ExecScalarAsync(sqlCommand);
             if (res != null)
             {
+                //TODO: why all these castings?
                 ulong qkwl = (ulong)res;
                 int Id = (int)qkwl;
                 return GetRowByPK(Id);
@@ -455,40 +356,14 @@ namespace DBL
 
         protected async Task<int> UpdateAsync(Dictionary<string, string> FildValue, Dictionary<string, string> parameters)
         {
-            string InKeyValue = "";
-            string where = "WHERE ";
+            string where = ParamsToWhereQuery(parameters);
 
-            if (parameters != null && parameters.Count > 0)
-            {
-                int i = 0;
-                foreach (KeyValuePair<string, string> param in parameters)
-                {
-                    where += $"{param.Key} = {param.Value}";
-                    i++;
-                    if (i < parameters.Count)
-                        where += " AND ";
-                }
-            }
-            else
-                where = "";
-
-            if (FildValue != null && FildValue.Count > 0)
-            {
-                int i = 0;
-                foreach (KeyValuePair<string, string> param in FildValue)
-                {
-                    InKeyValue += $"{param.Key} = '{param.Value}'";
-                    i++;
-                    if (i < FildValue.Count)
-                    {
-                        InKeyValue += ",";
-                    }
-                }
-            }
-            else
+            string InKeyValue = PrepareKeysEqValuesInQuery(FildValue);
+            if (string.IsNullOrEmpty(InKeyValue))
                 return 0;
+
             string sqlCommand = $"UPDATE {GetTableName()} SET {InKeyValue}  {where}";
-            return await exeNONqueryAsync(sqlCommand);
+            return await ExecNonQueryAsync(sqlCommand);
         }
 
         // Dictionary<string, string> parameters - תנאים לעדכון
@@ -496,24 +371,85 @@ namespace DBL
 
         protected async Task<int> DeleteAsync(Dictionary<string, string> parameters)
         {
-            string where = "WHERE ";
+            string where = ParamsToWhereQuery(parameters);
+
+            string sqlCommand = $"DELETE FROM {GetTableName()} {where}";
+            return await ExecNonQueryAsync(sqlCommand);
+        }
+
+        protected void AddParameterToCommand(string name, object value)
+        {
+            DbParameter p = cmd.CreateParameter();
+            p.ParameterName = name;
+            p.Value = value;
+            cmd.Parameters.Add(p);
+        }
+        /// <summary>
+        /// Prepare command and Connection before executing SQL command
+        /// </summary>
+        /// <param name="sqlCommandStr"></param>
+        private void PreQuery(string sqlCommandStr)
+        {
+            cmd.CommandText = sqlCommandStr;
+            if (DB.conn.State != System.Data.ConnectionState.Open)
+                DB.conn.Open();
+            if (cmd.Connection.State != System.Data.ConnectionState.Open)
+                cmd.Connection = DB.conn;
+        }
+
+        /// <summary>
+        /// Make cleanup after sql command was executed
+        /// </summary>
+        private void PostQuery()
+        {
+            if (reader != null && !reader.IsClosed)
+                reader?.Close();
+
+            cmd.Parameters.Clear();
+            if (DB.conn.State == System.Data.ConnectionState.Open)
+                DB.conn.Close();
+        }
+
+        /// <summary>
+        /// Prepare SQL Where closure from the given paremeters dictionary
+        /// </summary>
+        /// <param name="parameters">Key & Value</param>
+        /// <example>Where p1=v1 AND p2=v2</example>
+        /// <returns>String of SQL Where closure</returns>
+        private static string ParamsToWhereQuery(Dictionary<string, string> parameters)
+        {
+            string where = BaseDB<T>.WHERE_KW;
 
             if (parameters != null && parameters.Count > 0)
             {
-                int i = 0;
                 foreach (KeyValuePair<string, string> param in parameters)
                 {
-                    where += $"{param.Key} = {param.Value}";
-                    i++;
-                    if (i < parameters.Count)
-                        where += " AND ";
+                    where += $"{param.Key} = {param.Value} {AND} ";
                 }
+                where = where.Remove(where.Length - AND.Length - 2);//remove last ' AND '
             }
             else
                 where = "";
-
-            string sqlCommand = $"DELETE FROM {GetTableName()} {where}";
-            return await exeNONqueryAsync(sqlCommand);
+            return where;
+        }
+        /// <summary>
+        /// Extract keys and values from the dictionary and prepare a string of k1=v1,k2=v2
+        /// to be part of a query
+        /// </summary>
+        /// <param name="fields"></param>
+        /// <returns></returns>
+        private static string PrepareKeysEqValuesInQuery(Dictionary<string, string> fields)
+        {
+            string InKeyValue = "";
+            if (fields != null && fields.Count > 0)
+            {
+                foreach (KeyValuePair<string, string> param in fields)
+                {
+                    InKeyValue += $"{param.Key} = '{param.Value}',";
+                }
+                InKeyValue = InKeyValue.Remove(InKeyValue.Length - 1); //remove last ,
+            }
+            return InKeyValue;
         }
     }
 }

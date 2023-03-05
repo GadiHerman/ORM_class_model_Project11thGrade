@@ -59,7 +59,7 @@ namespace DBL
         protected override async Task<Order> GetRowByPKAsync(object pk)
         {
             string sql = @"SELECT orders.* FROM orders WHERE (OrderID = @id)";
-            cmd.Parameters.AddWithValue("@id", int.Parse(pk.ToString()));
+            AddParameterToCommand("@id", int.Parse(pk.ToString()));
             List<Order> list = (List<Order>)await SelectAllAsync(sql);
             if (list.Count == 1)
                 return list[0];
@@ -70,7 +70,7 @@ namespace DBL
         protected override Order GetRowByPK(object pk)
         {
             string sql = @"SELECT orders.* FROM orders WHERE (OrderID = @id)";
-            cmd.Parameters.AddWithValue("@id", int.Parse(pk.ToString()));
+            AddParameterToCommand("@id", int.Parse(pk.ToString()));
             List<Order> list = (List<Order>)SelectAll(sql);
             if (list.Count == 1)
                 return list[0];

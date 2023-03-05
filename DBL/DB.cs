@@ -1,63 +1,69 @@
 ﻿using MySql.Data.MySqlClient;
-using System.Collections.Generic;
+using System.Data;
+using System.Data.Common;
+using System.Data.OleDb;
+using Microsoft.Data.SqlClient;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using System;
+
 
 namespace DBL
 {
     public abstract class DB
     {
-        private const string connSTR = @"server=localhost;
+        private enum DbTypes
+        {
+            MSAccess,
+            MySql
+        }
+
+        private const DbTypes dbType = DbTypes.MySql;
+
+        private const string MySqlConnSTR = @"server=localhost;
                                     user id=root;
                                     password=1234;
                                     persistsecurityinfo=True;
                                     database=mystore";
-        protected static MySqlConnection conn;
-        protected MySqlCommand cmd;
-        protected MySqlDataReader reader;
+
+        protected const string AccessConnSTR = $@"Provider=Microsoft.ACE.OLEDB.12.0;
+                                    Data Source=C:\Users\Gadi\OneDrive\שולחן העבודה\Blazor\00_Code_files_2023\t13_project\mystore.accdb;
+                                    Persist Security Info=False;";
+
+        protected static DbConnection conn;
+        protected DbCommand cmd;
+        protected DbDataReader reader;
 
         protected DB()
         {
             if (conn == null)
             {
-                conn = new MySqlConnection(connSTR);
-            }
-            cmd = new MySqlCommand();
-            cmd.Connection = conn;
-        }
-
-        protected async Task<object> getDataFromDBAsync(string sqlCommand)
-        {
-            object list = new List<object[]>();
-            cmd.CommandText = sqlCommand;
-            if (DB.conn.State != System.Data.ConnectionState.Open)
-                DB.conn.Open();
-            if (cmd.Connection.State != System.Data.ConnectionState.Open)
-                cmd.Connection = DB.conn;
-            try
-            {
-                this.reader = (MySqlDataReader)await cmd.ExecuteReaderAsync();
-                var readOnlyData = await reader.GetColumnSchemaAsync();
-                int size = readOnlyData.Count;
-                object[] row;
-                while (this.reader.Read())
+                switch (dbType)
                 {
-                    row = new object[size];
-                    this.reader.GetValues(row);
-                    ((List<object[]>)list).Add(row);
+                    case DbTypes.MSAccess:
+                        conn = new OleDbConnection(AccessConnSTR);
+                        cmd = new OleDbCommand();
+                        break;
+                    case DbTypes.MySql:
+                        conn = new MySqlConnection(MySqlConnSTR);
+                        cmd = new MySqlCommand();
+                        break;
+                    default:
+                        throw new ArgumentException("Unsupported Db Type: ", dbType.ToString());
                 }
             }
-            catch (Exception e)
+            switch (dbType)
             {
-                System.Diagnostics.Debug.WriteLine(e.Message + "\nsql:" + cmd.CommandText);
-                //((List<string[]>)list).Clear();
+                case DbTypes.MSAccess:
+                    cmd = new OleDbCommand();
+                    break;
+                case DbTypes.MySql:
+                    cmd = new MySqlCommand();
+                    break;
+                default:
+                    throw new ArgumentException("Unsupported Db Type: ", dbType.ToString());
             }
-            finally
-            {
-                cmd.Parameters.Clear();
-                if (reader != null) reader.Close();
-                if (DB.conn.State == System.Data.ConnectionState.Open)
-                    DB.conn.Close();
-            }
-            return list;
+            cmd.Connection = conn;
+            reader = null;
         }
     }
 }
