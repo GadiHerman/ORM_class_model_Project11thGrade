@@ -38,8 +38,8 @@ namespace DBL
             List<Customer> custList = new List<Customer>();
             foreach (object[] item in rows)
             {
-                Customer c = new Customer();
-                c = (Customer)CreateModel(item);
+                Customer c;
+                c = CreateModel(item);
                 custList.Add(c);
             }
             return custList;
@@ -68,10 +68,14 @@ namespace DBL
                 return null;
         }
 
+        /// <summary>
+        /// TESTED get one customer from Database by primary key 
+        /// </summary>
+        /// <param name="id">SQL string</param>
+        /// <returns>One object of type customer.</returns>
         protected override Customer GetRowByPK(object pk)
         {
             string sql = @"SELECT customers.* FROM customers WHERE (CustomerID = @id)";
-            //cmd.Parameters.AddWithValue("@id", int.Parse(pk.ToString()));
             AddParameterToCommand("@id", int.Parse(pk.ToString()));
             List<Customer> list = (List<Customer>)SelectAll(sql);
             if (list.Count == 1)
@@ -90,27 +94,27 @@ namespace DBL
             return ((List<Customer>)SelectAll());
         }
 
-        public async Task<bool> InsertAsync(Customer customer,string password)
-        {
-            Dictionary<string, string> fillValues = new Dictionary<string, string>
-            {
-                { "Name", customer.Name },
-                { "Email", customer.Email },
-                { "CustomerPassword", password }
-            };
-            return await base.InsertAsync(fillValues) == 1;
-        }
+        //public async Task<bool> InsertAsync(Customer customer, string password)
+        //{
+        //    Dictionary<string, string> fillValues = new Dictionary<string, string>
+        //    {
+        //        { "Name", customer.Name },
+        //        { "Email", customer.Email },
+        //        { "CustomerPassword", password }
+        //    };
+        //    return await base.InsertAsync(fillValues) == 1;
+        //}
 
-        public bool Insert(Customer customer, string password)
-        {
-            Dictionary<string, string> fillValues = new Dictionary<string, string>
-            {
-                { "Name", customer.Name },
-                { "Email", customer.Email },
-                { "CustomerPassword", password }
-            };
-            return base.Insert(fillValues) == 1;
-        }
+        //public bool Insert(Customer customer, string password)
+        //{
+        //    Dictionary<string, string> fillValues = new Dictionary<string, string>
+        //    {
+        //        { "Name", customer.Name },
+        //        { "Email", customer.Email },
+        //        { "CustomerPassword", password }
+        //    };
+        //    return base.Insert(fillValues) == 1;
+        //}
 
         public async Task<Customer> InsertGetObjAsync(Customer customer, string password)
         {
@@ -120,9 +124,15 @@ namespace DBL
                 { "Email", customer.Email },
                 { "CustomerPassword", password }
             };
-            return (Customer)base.InsertGetObjAsync(fillValues);
+            return  (Customer)await base.InsertGetObjAsync(fillValues);
         }
 
+        /// <summary>
+        /// TESTED Insert new cusomer to Data
+        /// </summary>
+        /// <param name="Customer">Customer Object</param>
+        /// <param name="password">password (not part of Customer class)</param>
+        /// <returns>Customer Object with a primary key from the database.</returns>
         public Customer InsertGetObj(Customer customer, string password)
         {
             Dictionary<string, string> fillValues = new Dictionary<string, string>()
@@ -210,6 +220,12 @@ namespace DBL
             return oldPassword;
         }
 
+        /// <summary>
+        /// TESTED asynchronous version of SelectByPk
+        /// get one customer from Database by primary key 
+        /// </summary>
+        /// <param name="id">SQL string</param>
+        /// <returns>One object of type customer.</returns>
         public async Task<Customer> SelectByPkAsync(int id)
         {
             string sql = @"SELECT customers.* FROM customers WHERE (CustomerID = @id)";
@@ -236,79 +252,79 @@ namespace DBL
                 return null;
         }
 
-        public async Task<List<Customer>> GetNonAdminsAsync()
-        {
-            Dictionary<string, string> p = new Dictionary<string, string>();
-            p.Add("IsAdmin", "0");
-            return ((List<Customer>)await SelectAllAsync(p));
-        }
+        //public async Task<List<Customer>> GetNonAdminsAsync()
+        //{
+        //    Dictionary<string, string> p = new Dictionary<string, string>();
+        //    p.Add("IsAdmin", "0");
+        //    return ((List<Customer>)await SelectAllAsync(p));
+        //}
 
-        public List<Customer> GetNonAdmins()
-        {
-            Dictionary<string, string> p = new Dictionary<string, string>();
-            p.Add("IsAdmin", "0");
-            return ((List<Customer>)SelectAll(p));
-        }
+        //public List<Customer> GetNonAdmins()
+        //{
+        //    Dictionary<string, string> p = new Dictionary<string, string>();
+        //    p.Add("IsAdmin", "0");
+        //    return ((List<Customer>)SelectAll(p));
+        //}
 
-        public async Task<List<(string, string)>> GetName_Email4NonAdminsAsync()
-        {
-            List<(string, string)> returnList = new List<(string, string)>();
-            string sql = "select Name, Email from Customers";
-            Dictionary<string, string> p = new Dictionary<string, string>();
-            p.Add("IsAdmin", "0");
-            List<object[]> list = (List<object[]>)await base.StingListSelectAllAsync(sql, p);
-            foreach (object[] item in list)
-            {
-                string name = item[0].ToString();
-                string email = item[1].ToString();
-                returnList.Add((name, email));
-            }
-            return returnList;
-        }
+        //public async Task<List<(string, string)>> GetName_Email4NonAdminsAsync()
+        //{
+        //    List<(string, string)> returnList = new List<(string, string)>();
+        //    string sql = "select Name, Email from Customers";
+        //    Dictionary<string, string> p = new Dictionary<string, string>();
+        //    p.Add("IsAdmin", "0");
+        //    List<object[]> list = (List<object[]>)await base.StingListSelectAllAsync(sql, p);
+        //    foreach (object[] item in list)
+        //    {
+        //        string name = item[0].ToString();
+        //        string email = item[1].ToString();
+        //        returnList.Add((name, email));
+        //    }
+        //    return returnList;
+        //}
 
-        public List<(string, string)> GetName_Email4NonAdmins()
-        {
-            List<(string, string)> returnList = new List<(string, string)>();
-            string sql = "select Name, Email from Customers";
-            Dictionary<string, string> p = new Dictionary<string, string>();
-            p.Add("IsAdmin", "0");
-            List<object[]> list = (List<object[]>)base.StingListSelectAll(sql, p);
-            foreach (object[] item in list)
-            {
-                string name = item[0].ToString();
-                string email = item[1].ToString();
-                returnList.Add((name, email));
-            }
-            return returnList;
-        }
+        //public List<(string, string)> GetName_Email4NonAdmins()
+        //{
+        //    List<(string, string)> returnList = new List<(string, string)>();
+        //    string sql = "select Name, Email from Customers";
+        //    Dictionary<string, string> p = new Dictionary<string, string>();
+        //    p.Add("IsAdmin", "0");
+        //    List<object[]> list = (List<object[]>)base.StingListSelectAll(sql, p);
+        //    foreach (object[] item in list)
+        //    {
+        //        string name = item[0].ToString();
+        //        string email = item[1].ToString();
+        //        returnList.Add((name, email));
+        //    }
+        //    return returnList;
+        //}
 
-        public async Task<Customer> GetCustomerByOrderIDAsync(int orderID)
-        {
-            string sql = @$"Select mystore.customers.*
-                           From mystore.customers Inner Join mystore.orders 
-                           On mystore.orders.CustomerID = mystore.customers.CustomerID";
-            Dictionary<string, string> p = new Dictionary<string, string>();
-            p.Add("mystore.orders.OrderID", orderID.ToString());
-            List<Customer> list = (List<Customer>)await SelectAllAsync(sql, p);
-            if (list.Count == 1)
-                return list[0];
-            else
-                return null;
-        }
+        //public async Task<Customer> GetCustomerByOrderIDAsync(int orderID)
+        //{
+        //    string sql = @$"Select mystore.customers.*
+        //                   From mystore.customers Inner Join mystore.orders 
+        //                   On mystore.orders.CustomerID = mystore.customers.CustomerID";
+        //    Dictionary<string, string> p = new Dictionary<string, string>();
+        //    p.Add("mystore.orders.OrderID", orderID.ToString());
+        //    List<Customer> list = (List<Customer>)await SelectAllAsync(sql, p);
+        //    if (list.Count == 1)
+        //        return list[0];
+        //    else
+        //        return null;
+        //}
 
-        public Customer GetCustomerByOrderID(int orderID)
-        {
-            string sql = @$"Select mystore.customers.*
-                           From mystore.customers Inner Join mystore.orders 
-                           On mystore.orders.CustomerID = mystore.customers.CustomerID";
-            Dictionary<string, string> p = new Dictionary<string, string>();
-            p.Add("mystore.orders.OrderID", orderID.ToString());
-            List<Customer> list = (List<Customer>)SelectAll(sql, p);
-            if (list.Count == 1)
-                return list[0];
-            else
-                return null;
-        }
+        //public Customer GetCustomerByOrderID(int orderID)
+        //{
+        //    string sql = @$"Select mystore.customers.*
+        //                   From mystore.customers Inner Join mystore.orders 
+        //                   On mystore.orders.CustomerID = mystore.customers.CustomerID";
+        //    Dictionary<string, string> p = new Dictionary<string, string>();
+        //    p.Add("mystore.orders.OrderID", orderID.ToString());
+        //    List<Customer> list = (List<Customer>)SelectAll(sql, p);
+        //    if (list.Count == 1)
+        //        return list[0];
+        //    else
+        //        return null;
+        //}
 
     }
 }

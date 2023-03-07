@@ -100,25 +100,25 @@ namespace DBL
                 return null;
         }
 
-        public async Task<bool> InsertAsync(Order order)
-        {
-            Dictionary<string, string> fillValues = new Dictionary<string, string>();
-            DateTime d = DateTime.Now;
-            string dts = $"'{d.Year}-{d.Month}-{d.Day} {d.Hour}:{d.Minute}:{d.Second}'";
-            fillValues.Add("OrderDateTime", dts);
-            fillValues.Add("CustomerID", order.customer.Id.ToString());
-            return await base.InsertAsync(fillValues) == 1;
-        }
+        //public async Task<bool> InsertAsync(Order order)
+        //{
+        //    Dictionary<string, string> fillValues = new Dictionary<string, string>();
+        //    DateTime d = DateTime.Now;
+        //    string dts = $"'{d.Year}-{d.Month}-{d.Day} {d.Hour}:{d.Minute}:{d.Second}'";
+        //    fillValues.Add("OrderDateTime", dts);
+        //    fillValues.Add("CustomerID", order.customer.Id.ToString());
+        //    return await base.InsertAsync(fillValues) == 1;
+        //}
 
-        public Order InsertGetObjAsync(Order order)
-        {
-            Dictionary<string, string> fillValues = new Dictionary<string, string>();
-            DateTime d = DateTime.Now;
-            string dts = $"'{d.Year}-{d.Month}-{d.Day} {d.Hour}:{d.Minute}:{d.Second}'";
-            fillValues.Add("OrderDateTime", dts);
-            fillValues.Add("CustomerID", order.customer.Id.ToString());
-            return (Order)base.InsertGetObjAsync(fillValues);
-        }
+        //public Order InsertGetObjAsync(Order order)
+        //{
+        //    Dictionary<string, string> fillValues = new Dictionary<string, string>();
+        //    DateTime d = DateTime.Now;
+        //    string dts = $"'{d.Year}-{d.Month}-{d.Day} {d.Hour}:{d.Minute}:{d.Second}'";
+        //    fillValues.Add("OrderDateTime", dts);
+        //    fillValues.Add("CustomerID", order.customer.Id.ToString());
+        //    return (Order)base.InsertGetObjAsync(fillValues);
+        //}
 
         public async Task<int> UpdateAsync(Order order)
         {

@@ -28,9 +28,11 @@
         Customer customer = new Customer();
         customer.Name = Name;
         customer.Email = Email;
+
         if (Password1 == Password2 && Password1 != "" && Name != "" && Email != "")
         {
-            if (await customerDB.InsertAsync(customer, Password1))
+            customer = (Customer)await customerDB.InsertGetObjAsync(customer, Password1);
+            if (customer.Id != 0)
             {
                 s = "welcome " + customer.Name;
                 await Task.Delay(3000);
