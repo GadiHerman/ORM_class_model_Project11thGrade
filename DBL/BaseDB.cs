@@ -4,9 +4,6 @@ namespace DBL
 {
     public abstract class BaseDB<T> : DB
     {
-        private const string WHERE_KW = "WHERE ";
-        private const string AND = "AND";
-
         protected abstract string GetTableName();
         protected abstract T GetRowByPK(object pk);
         protected abstract Task<T> GetRowByPKAsync(object pk);
@@ -377,13 +374,6 @@ namespace DBL
             return await ExecNonQueryAsync(sqlCommand);
         }
 
-        protected void AddParameterToCommand(string name, object value)
-        {
-            DbParameter p = cmd.CreateParameter();
-            p.ParameterName = name;
-            p.Value = value;
-            cmd.Parameters.Add(p);
-        }
         /// <summary>
         /// Prepare command and Connection before executing SQL command
         /// </summary>
