@@ -30,48 +30,12 @@ namespace DBL
             List<object[]> list = StingListSelectAll(query, parameters);
             return CreateListModel(list);
         }
-
         protected void AddParameterToCommand(string name, object value)
         {
             DbParameter p = cmd.CreateParameter();
             p.ParameterName = name;
             p.Value = value;
             cmd.Parameters.Add(p);
-        }
-        protected List<object[]> StingListSelectAll(string query, Dictionary<string, string> parameters)
-        {
-            List<object[]> list = new List<object[]>();
-
-            string where = PrepareWhereQueryWithParameters(parameters);
-
-            string sqlCommand = $"{query} {where}";
-            if (String.IsNullOrEmpty(query))
-                sqlCommand = $"SELECT * FROM {GetTableName()} {where}";
-
-            PreQuery(sqlCommand);
-
-            try
-            {
-                reader = cmd.ExecuteReader();
-                int size = reader.GetColumnSchema().Count;
-                object[] row;
-                while (reader.Read())
-                {
-                    row = new object[size];
-                    reader.GetValues(row);
-                    list.Add(row);
-                }
-            }
-            catch (Exception e)
-            {
-                System.Diagnostics.Debug.WriteLine(e.Message + "\nsql:" + cmd.CommandText);
-                list.Clear();
-            }
-            finally
-            {
-                PostQuery();
-            }
-            return list;
         }
 
         /// <summary>
@@ -204,42 +168,6 @@ namespace DBL
             return CreateListModel(list);
         }
 
-        protected async Task<List<object[]>> StingListSelectAllAsync(string query, Dictionary<string, string> parameters)
-        {
-            List<object[]> list = new List<object[]>();
-            string where = PrepareWhereQueryWithParameters(parameters);
-
-            string sqlCommand = $"{query} {where}";
-            if (String.IsNullOrEmpty(query))
-                sqlCommand = $"SELECT * FROM {GetTableName()} {where}";
-
-            PreQuery(sqlCommand);
-
-            try
-            {
-                reader = await cmd.ExecuteReaderAsync();
-                var readOnlyData = await reader.GetColumnSchemaAsync();
-                int size = readOnlyData.Count;
-                object[] row;
-                while (reader.Read())
-                {
-                    row = new object[size];
-                    reader.GetValues(row);
-                    list.Add(row);
-                }
-            }
-            catch (Exception e)
-            {
-                System.Diagnostics.Debug.WriteLine(e.Message + "\nsql:" + cmd.CommandText);
-                list.Clear();
-            }
-            finally
-            {
-                PostQuery();
-            }
-            return list;
-        }
-
         /// <summary>
         /// TESTED asynchronous version of ExecNonQuery
         /// </summary>
@@ -313,20 +241,6 @@ namespace DBL
             }
             else
                 return null;
-
-            //string sqlCommand = PrepareInsertQueryWithParameters(keyAndValue);
-            //if (sqlCommand != "")
-            //{
-            //    sqlCommand += $" SELECT LAST_INSERT_ID();";
-            //    object res = ExecScalarAsync(sqlCommand);
-            //    if (res != null)
-            //    {
-            //        return GetRowByPK(res);
-            //    }
-            //}
-            //return null;
-
-
         }
 
 

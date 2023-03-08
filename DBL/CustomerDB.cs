@@ -59,7 +59,6 @@ namespace DBL
         protected override async Task<Customer> GetRowByPKAsync(object pk)
         {
             string sql = @"SELECT customers.* FROM customers WHERE (CustomerID = @id)";
-            //cmd.Parameters.AddWithValue("@id", int.Parse(pk.ToString()));
             AddParameterToCommand("@id", int.Parse(pk.ToString()));
             List<Customer> list = (List<Customer>)await SelectAllAsync(sql);
             if (list.Count == 1)

@@ -14,7 +14,6 @@ namespace ConsoleUnitTesting
             customer = db.InsertGetObj(customer, "1234");
             Console.WriteLine($"id: {customer.Id} name: {customer.Name} email: {customer.Email}\n\n");
 
-
             //TEST CustomerDB Get by id
             CustomerDB cdb = new CustomerDB();
             Dictionary<string, string> param = new Dictionary<string, string>();
