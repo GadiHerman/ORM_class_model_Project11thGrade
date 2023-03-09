@@ -13,23 +13,52 @@ namespace DBL
         protected abstract List<T> CreateListModel(List<object[]> rows);
         protected abstract Task<List<T>> CreateListModelAsync(List<object[]> rows);
 
+        /// <summary> 
+        /// A generic operation to retrieve ALL data from the database.
+        /// </summary>
+        /// <returns>List of Objects</returns>
         public List<T> SelectAll()
         {
             return SelectAll("", new Dictionary<string, string>());
         }
+
+        /// <summary> 
+        /// A generic operation to retrieve data from the database.
+        /// </summary>
+        /// <param name="parameters">Dictionary (Key & Value)</param>
+        /// <returns>List of Objects</returns>
         public List<T> SelectAll(Dictionary<string, string> parameters)
         {
             return SelectAll("", parameters);
         }
+
+        /// <summary> 
+        /// A generic operation to retrieve data from the database.
+        /// </summary>
+        /// <param name="query">SQL string</param>
+        /// <returns>List of Objects</returns>
         public List<T> SelectAll(string query)
         {
             return SelectAll(query, new Dictionary<string, string>());
         }
+
+        /// <summary> 
+        /// A generic operation to retrieve data from the database.
+        /// </summary>
+        /// <param name="query">SQL string</param>
+        /// <param name="parameters">Dictionary (Key & Value)</param>
+        /// <returns>List of Objects</returns>
         public List<T> SelectAll(string query, Dictionary<string, string> parameters)
         {
             List<object[]> list = StingListSelectAll(query, parameters);
             return CreateListModel(list);
         }
+
+        /// <summary>
+        /// Add one parameters to Transact-SQL statement.
+        /// </summary>
+        /// <param name="name">Parameter name example:@id</param>
+        /// <param name="value">Parameter value</param>
         protected void AddParameterToCommand(string name, object value)
         {
             DbParameter p = cmd.CreateParameter();
@@ -95,19 +124,26 @@ namespace DBL
         }
 
 
+        /// <summary>
+        /// insert new records in a table using INSERT Statement.
+        /// </summary>
+        /// <param name="keyAndValue">Dictionary (Key & Value)</param>
+        /// <returns>The number of rows affected.</returns>
+        protected int Insert(Dictionary<string, string> keyAndValue)
+        {
+            string sqlCommand = PrepareInsertQueryWithParameters(keyAndValue);
+            if (sqlCommand != "")
+            {
+                return ExecNonQuery(sqlCommand);
+            }
+            return 0;
+        }
 
-        //// Dictionary<string, string> FildValue - ערכים של שדות
-        //// return -  מספר שדות שעודכנו
-        //protected int Insert(Dictionary<string, string> keyAndValue)
-        //{
-        //    string sqlCommand = PrepareInsertQueryWithParameters(keyAndValue);
-        //    if (sqlCommand != "")
-        //    {
-        //        return ExecNonQuery(sqlCommand);
-        //    }
-        //    return 0;
-        //}
-
+        /// <summary>
+        /// insert new records in a table using INSERT Statement.
+        /// </summary>
+        /// <param name="keyAndValue">Dictionary (Key & Value)</param>
+        /// <returns>An object that includes the ID attribute from the database.</returns>
         protected object InsertGetObj(Dictionary<string, string> keyAndValue)
         {
             string sqlCommand = PrepareInsertQueryWithParameters(keyAndValue);
@@ -123,23 +159,29 @@ namespace DBL
             return null;
         }
 
-        // Dictionary<string, string> FildValue - ערכים של שדות
-        // Dictionary<string, string> parameters - תנאים לעדכון
-        // return -  מספר שדות שעודכנו
-        protected int Update(Dictionary<string, string> keyAndValue, Dictionary<string, string> parameters)
+        /// <summary>
+        /// Update records in a table using SQL UPDATE Statement.
+        /// </summary>
+        /// <param name="FildValue">Dictionary (Key & Value)</param>
+        /// <param name="parameters">Dictionary (Key & Value)</param>
+        /// <returns>The number of rows affected.</returns>
+        protected int Update(Dictionary<string, string> FildValue, Dictionary<string, string> parameters)
         {
-            if (keyAndValue == null || keyAndValue.Count == 0)
+            if (FildValue == null || FildValue.Count == 0)
                 return 0;
 
-            string InKeyValue = PrepareUpdateQueryWithParameters(keyAndValue);
+            string InKeyValue = PrepareUpdateQueryWithParameters(FildValue);
             string where = PrepareWhereQueryWithParameters(parameters);
 
             string sqlCommand = $"UPDATE {GetTableName()} SET {InKeyValue}  {where}";
             return ExecNonQuery(sqlCommand);
         }
 
-        // Dictionary<string, string> parameters - תנאים לעדכון
-        // return -  מספר שדות שעודכנו
+        /// <summary>
+        /// Delete records in a table using SQL DELETE Statement.
+        /// </summary>
+        /// <param name="parameters">Dictionary (Key & Value)</param>
+        /// <returns>The number of rows affected.</returns>
         protected int Delete(Dictionary<string, string> parameters)
         {
             string where = PrepareWhereQueryWithParameters(parameters);
@@ -148,20 +190,45 @@ namespace DBL
             return ExecNonQuery(sqlCommand);
         }
 
-
+        /// <summary>
+        /// asynchronous version of SelectAll
+        /// A generic operation to retrieve ALL data from the database.
+        /// </summary>
+        /// <returns>List of Objects</returns>
         public async Task<List<T>> SelectAllAsync()
         {
             return await SelectAllAsync("", new Dictionary<string, string>());
         }
 
+        /// <summary>
+        /// asynchronous version of SelectAll
+        /// A generic operation to retrieve data from the database.
+        /// </summary>
+        /// <param name="parameters">Dictionary (Key & Value)</param>
+        /// <returns>List of Objects</returns>
         public async Task<List<T>> SelectAllAsync(Dictionary<string, string> parameters)
         {
             return await SelectAllAsync("", parameters);
         }
+
+        /// <summary>
+        /// asynchronous version of SelectAll
+        /// A generic operation to retrieve data from the database.
+        /// </summary>
+        /// <param name="query">SQL string</param>
+        /// <returns>List of Objects</returns>
         public async Task<List<T>> SelectAllAsync(string query)
         {
             return await SelectAllAsync(query, new Dictionary<string, string>());
         }
+
+        /// <summary>
+        /// asynchronous version of SelectAll
+        /// A generic operation to retrieve data from the database.
+        /// </summary>
+        /// <param name="query">SQL string</param>
+        /// <param name="parameters">Dictionary (Key & Value)</param>
+        /// <returns>List of Objects</returns>
         public async Task<List<T>> SelectAllAsync(string query, Dictionary<string, string> parameters)
         {
             List<object[]> list = await StingListSelectAllAsync(query, parameters);
@@ -169,7 +236,7 @@ namespace DBL
         }
 
         /// <summary>
-        /// TESTED asynchronous version of ExecNonQuery
+        /// asynchronous version of ExecNonQuery
         /// </summary>
         /// <param name="query">SQL string</param>
         /// <example>DELETE FROM Customers WHERE CustomerID = 17</example>
@@ -222,14 +289,24 @@ namespace DBL
             return obj;
         }
 
+        /// <summary>
+        /// asynchronous version of Insert
+        /// insert new records in a table using INSERT Statement.
+        /// </summary>
+        /// <param name="keyAndValue">Dictionary (Key & Value)</param>
+        /// <returns>The number of rows affected.</returns>
+        protected async Task<int> InsertAsync(Dictionary<string, string> keyAndValue)
+        {
+            string sqlCommand = PrepareInsertQueryWithParameters(keyAndValue);
+            return await ExecNonQueryAsync(sqlCommand);
+        }
 
-        //// Dictionary<string, string> FildValue - ערכים של שדות
-        //// return -  מספר שדות שעודכנו
-        //protected async Task<int> InsertAsync(Dictionary<string, string> keyAndValue)
-        //{
-        //    string sqlCommand = PrepareInsertQueryWithParameters(keyAndValue);
-        //    return await ExecNonQueryAsync(sqlCommand);
-        //}
+        /// <summary>
+        /// asynchronous version of InsertGetObj
+        /// insert new records in a table using INSERT Statement.
+        /// </summary>
+        /// <param name="keyAndValue">Dictionary (Key & Value)</param>
+        /// <returns>An object that includes the ID attribute from the database.</returns>
         protected async Task<object> InsertGetObjAsync(Dictionary<string, string> keyAndValue)
         {
             string sqlCommand = PrepareInsertQueryWithParameters(keyAndValue);
@@ -243,11 +320,13 @@ namespace DBL
                 return null;
         }
 
-
-        // Dictionary<string, string> FildValue - ערכים של שדות
-        // Dictionary<string, string> parameters - תנאים לעדכון
-        // return -  מספר שדות שעודכנו
-
+        /// <summary>
+        /// asynchronous version of Update
+        /// Update records in a table using SQL UPDATE Statement.
+        /// </summary>
+        /// <param name="FildValue">Dictionary (Key & Value)</param>
+        /// <param name="parameters">Dictionary (Key & Value)</param>
+        /// <returns>The number of rows affected.</returns>
         protected async Task<int> UpdateAsync(Dictionary<string, string> FildValue, Dictionary<string, string> parameters)
         {
             string where = PrepareWhereQueryWithParameters(parameters);
@@ -260,9 +339,12 @@ namespace DBL
             return await ExecNonQueryAsync(sqlCommand);
         }
 
-        // Dictionary<string, string> parameters - תנאים לעדכון
-        // return -  מספר שדות שעודכנו
-
+        /// <summary>
+        /// asynchronous version of Delete
+        /// Delete records in a table using SQL DELETE Statement.
+        /// </summary>
+        /// <param name="parameters">Dictionary (Key & Value)</param>
+        /// <returns>The number of rows affected.</returns>
         protected async Task<int> DeleteAsync(Dictionary<string, string> parameters)
         {
             string where = PrepareWhereQueryWithParameters(parameters);
@@ -272,7 +354,7 @@ namespace DBL
         }
 
         /// <summary>
-        /// TESTED Prepare command and Connection before executing SQL command
+        /// Prepare command and Connection before executing SQL command
         /// </summary>
         /// <example>DELETE FROM Customers WHERE CustomerID = 17</example>
         /// <param name="query">SQL query string</param>
@@ -301,7 +383,7 @@ namespace DBL
         /// <summary>
         /// Prepare SQL Where closure from the given paremeters dictionary
         /// </summary>
-        /// <param name="parameters">Key & Value</param>
+        /// <param name="parameters">Dictionary (Key & Value)</param>
         /// <example>Where p1=v1 AND p2=v2</example>
         /// <returns>String of SQL Where closure</returns>
         private string PrepareWhereQueryWithParameters(Dictionary<string, string> parameters)
@@ -323,12 +405,12 @@ namespace DBL
                 where = "";
             return where;
         }
+
         /// <summary>
-        /// Extract keys and values from the dictionary and prepare a string of k1=v1,k2=v2
-        /// to be part of a query
+        /// Prepare Update Query With Parameters
         /// </summary>
-        /// <param name="fields"></param>
-        /// <returns></returns>
+        /// <param name="fields">Dictionary (Key & Value)</param>
+        /// <returns>String of SQL</returns>
         private string PrepareUpdateQueryWithParameters(Dictionary<string, string> fields)
         {
             string InValue = "";
@@ -345,6 +427,11 @@ namespace DBL
             return InValue;
         }
 
+        /// <summary>
+        /// Prepare Insert Query With Parameters
+        /// </summary>
+        /// <param name="fields">Dictionary (Key & Value)</param>
+        /// <returns>String of SQL</returns>
         private string PrepareInsertQueryWithParameters(Dictionary<string, string> fields)
         {
             if (fields == null || fields.Count == 0)
@@ -363,6 +450,72 @@ namespace DBL
 
             string sqlCommand = $"INSERT INTO {GetTableName()}  {InKey} {InValue};";
             return sqlCommand;
+        }
+
+        private List<object[]> StingListSelectAll(string query, Dictionary<string, string> parameters)
+        {
+            List<object[]> list = new List<object[]>();
+            string where = PrepareWhereQueryWithParameters(parameters);
+            string sqlCommand = $"{query} {where}";
+            if (String.IsNullOrEmpty(query))
+                sqlCommand = $"SELECT * FROM {GetTableName()} {where}";
+
+            PreQuery(sqlCommand);
+            try
+            {
+                reader = cmd.ExecuteReader();
+                int size = reader.GetColumnSchema().Count;
+                object[] row;
+                while (reader.Read())
+                {
+                    row = new object[size];
+                    reader.GetValues(row);
+                    list.Add(row);
+                }
+            }
+            catch (Exception e)
+            {
+                System.Diagnostics.Debug.WriteLine(e.Message + "\nsql:" + cmd.CommandText);
+                list.Clear();
+            }
+            finally
+            {
+                PostQuery();
+            }
+            return list;
+        }
+
+        private async Task<List<object[]>> StingListSelectAllAsync(string query, Dictionary<string, string> parameters)
+        {
+            List<object[]> list = new List<object[]>();
+            string where = PrepareWhereQueryWithParameters(parameters);
+            string sqlCommand = $"{query} {where}";
+            if (String.IsNullOrEmpty(query))
+                sqlCommand = $"SELECT * FROM {GetTableName()} {where}";
+            PreQuery(sqlCommand);
+            try
+            {
+                reader = await cmd.ExecuteReaderAsync();
+                var readOnlyData = await reader.GetColumnSchemaAsync();
+                int size = readOnlyData.Count;
+                object[] row;
+                while (reader.Read())
+                {
+                    row = new object[size];
+                    reader.GetValues(row);
+                    list.Add(row);
+                }
+            }
+            catch (Exception e)
+            {
+                System.Diagnostics.Debug.WriteLine(e.Message + "\nsql:" + cmd.CommandText);
+                list.Clear();
+            }
+            finally
+            {
+                PostQuery();
+            }
+            return list;
         }
     }
 }

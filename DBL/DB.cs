@@ -25,8 +25,8 @@ namespace DBL
                                     persistsecurityinfo=True;
                                     database=mystore";
 
-        protected const string AccessConnSTR = $@"Provider=Microsoft.ACE.OLEDB.12.0;
-                                    Data Source=C:\Users\Gadi\OneDrive\שולחן העבודה\Blazor\00_Code_files_2023\t13_project\mystore.accdb;
+        private const string AccessConnSTR = $@"Provider=Microsoft.ACE.OLEDB.12.0;
+                                    Data Source=C:\Users\Gadi\OneDrive\שולחן העבודה\Blazor\00_Code_files_2023\t13_project\00000_____________________DB_files\mystore.accdb;
                                     Persist Security Info=False;";
 
         protected static DbConnection conn;
