@@ -1,5 +1,4 @@
-﻿using Google.Protobuf.WellKnownTypes;
-using System.Data.Common;
+﻿using System.Data.Common;
 
 namespace DBL
 {
@@ -14,7 +13,7 @@ namespace DBL
         protected abstract Task<List<T>> CreateListModelAsync(List<object[]> rows);
 
         /// <summary> 
-        /// A generic operation to retrieve ALL data from the database.
+        /// A generic operation to retrieve ALL data from the database
         /// </summary>
         /// <returns>List of Objects</returns>
         public List<T> SelectAll()
@@ -23,7 +22,7 @@ namespace DBL
         }
 
         /// <summary> 
-        /// A generic operation to retrieve data from the database.
+        /// A generic operation to retrieve data from the database
         /// </summary>
         /// <param name="parameters">Dictionary (Key & Value)</param>
         /// <returns>List of Objects</returns>
